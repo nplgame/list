@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Store - Trang Quản Trị</title>
+  
+  <!-- Tailwind CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <header class="bg-indigo-600 text-white shadow-lg">
+    <div class="container mx-auto py-4 px-6 flex justify-between items-center">
+      <h1 class="text-3xl font-bold">Game Store - Quản Trị</h1>
+      <nav>
+        <a href="index.html" class="text-white font-medium mr-4">Trang chủ</a>
+        <a href="admin.html" class="bg-white text-indigo-600 py-2 px-4 rounded-lg font-medium transition-all hover:bg-indigo-100">Admin</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-6 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Thêm game hàng loạt -->
+      <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-xl font-bold mb-4">Thêm Game Hàng Loạt</h2>
+        <p class="text-gray-600 mb-4">
+          Nhập danh sách game theo định dạng: <br>
+          <code class="bg-gray-100 p-1 rounded">Tên game|Giá|Thể loại|Link ảnh</code>
+        </p>
+        
+        <div class="mb-4">
+          <label for="bulk-games" class="block text-sm font-medium text-gray-700 mb-2">Danh sách game</label>
+          <textarea id="bulk-games" rows="8" class="w-full border border-gray-300 rounded-lg p-3" 
+            placeholder="Elden Ring|800000|Action RPG|https://example.com/elden-ring.jpg
+God of War|700000|Action Adventure|https://example.com/god-of-war.jpg"></textarea>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Tùy chọn xử lý trùng lặp</label>
+          <div class="flex items-center">
+            <input type="checkbox" id="check-duplicates" class="mr-2" checked>
+            <label for="check-duplicates">Tự động kiểm tra và loại bỏ trùng lặp</label>
+          </div>
+        </div>
+        
+        <button id="add-bulk-games" class="bg-indigo-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+          Thêm Game
+        </button>
+      </div>
+      
+      <!-- Quản lý giảm giá -->
+      <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-xl font-bold mb-4">Quản Lý Giảm Giá</h2>
+        
+        <div class="mb-4">
+          <h3 class="text-lg font-medium mb-2">Giảm giá theo phần trăm</h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="discount-genre" class="block text-sm font-medium text-gray-700 mb-2">Thể loại</label>
+              <select id="discount-genre" class="w-full border border-gray-300 rounded-lg p-2">
+                <option value="">Tất cả thể loại</option>
+                <!-- Các option sẽ được thêm bằng JavaScript -->
+              </select>
+            </div>
+            
+            <div>
+              <label for="discount-percentage" class="block text-sm font-medium text-gray-700 mb-2">Phần trăm giảm</label>
+              <div class="flex items-center">
+                <input type="number" id="discount-percentage" class="w-full border border-gray-300 rounded-lg p-2" min="1" max="99" placeholder="10">
+                <span class="ml-2">%</span>
+              </div>
+            </div>
+          </div>
+          
+          <button id="apply-percentage-discount" class="mt-4 bg-indigo-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+            Áp dụng giảm giá
+          </button>
+        </div>
+        
+        <div class="pt-4 border-t border-gray-200">
+          <h3 class="text-lg font-medium mb-2">Giảm giá theo khoảng giá</h3>
+          
+          <div class="grid grid-cols-1 gap-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="price-range-min" class="block text-sm font-medium text-gray-700 mb-2">Giá từ</label>
+                <input type="number" id="price-range-min" class="w-full border border-gray-300 rounded-lg p-2" placeholder="100000">
+              </div>
+              
+              <div>
+                <label for="price-range-max" class="block text-sm font-medium text-gray-700 mb-2">Đến</label>
+                <input type="number" id="price-range-max" class="w-full border border-gray-300 rounded-lg p-2" placeholder="500000">
+              </div>
+            </div>
+            
+            <div>
+              <label for="price-range-discount" class="block text-sm font-medium text-gray-700 mb-2">Phần trăm giảm</label>
+              <div class="flex items-center">
+                <input type="number" id="price-range-discount" class="w-full border border-gray-300 rounded-lg p-2" min="1" max="99" placeholder="15">
+                <span class="ml-2">%</span>
+              </div>
+            </div>
+          </div>
+          
+          <button id="apply-price-range-discount" class="mt-4 bg-indigo-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+            Áp dụng giảm giá
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Quản lý danh sách game -->
+    <div class="bg-white rounded-xl shadow-md p-6 mt-8">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">Danh Sách Game Hiện Tại</h2>
+        <div>
+          <button id="remove-duplicates" class="bg-yellow-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-yellow-600 transition-colors mr-2">
+            Xóa Trùng Lặp
+          </button>
+          <button id="reset-discounts" class="bg-gray-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-600 transition-colors">
+            Reset Giảm Giá
+          </button>
+        </div>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên Game</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thể Loại</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá Gốc</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giảm Giá</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá Sau Giảm</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody id="games-table-body" class="bg-white divide-y divide-gray-200">
+            <!-- Game rows will be added here by JavaScript -->
+            <tr>
+              <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                <div id="table-loading" class="flex justify-center py-4">
+                  <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-indigo-600"></div>
+                </div>
+                <div id="table-no-games" class="hidden">
+                  Chưa có game nào. Vui lòng thêm game mới.
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Status Messages -->
+    <div id="status-message" class="fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg hidden"></div>
+  </main>
+  
+  <footer class="bg-gray-800 text-white py-6 mt-12">
+    <div class="container mx-auto px-6 text-center">
+      <p>Game Store &copy; 2025 - Website xây dựng với Firebase và GitHub Pages</p>
+    </div>
+  </footer>
+
+  <!-- Game Row Template -->
+  <template id="game-row-template">
+    <tr class="hover:bg-gray-50">
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="flex items-center">
+          <div class="h-10 w-10 flex-shrink-0">
+            <img class="h-10 w-10 rounded object-cover" src="" alt="">
+          </div>
+          <div class="ml-4">
+            <div class="text-sm font-medium text-gray-900 game-name"></div>
+          </div>
+        </div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm text-gray-900 game-genre"></div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm text-gray-900 game-price"></div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="game-discount-badge px-2 py-1 text-xs font-semibold rounded-full"></span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm font-medium text-indigo-600 game-discount-price"></div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <button class="delete-game text-red-600 hover:text-red-900 mr-3">Xóa</button>
+        <button class="edit-discount text-indigo-600 hover:text-indigo-900">Chỉnh sửa</button>
+      </td>
+    </tr>
+  </template>
+
+  <!-- Firebase Config -->
+  <script src="firebase-config.js"></script>
+  
+  <!-- Admin JavaScript -->
+  <script src="admin.js"></script>
+</body>
+</html>
