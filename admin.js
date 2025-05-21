@@ -114,10 +114,10 @@ function showStatusMessage(message, type = 'success') {
   
   statusMessage.classList.remove('hidden');
   
-  // Hide after 3 seconds
+  // Hide after 5 seconds
   setTimeout(() => {
     statusMessage.classList.add('hidden');
-  }, 3000);
+  }, 5000);
 }
 
 // Render a single game row in the table
@@ -128,6 +128,11 @@ function renderGameRow(gameId, game) {
   const imageElement = row.querySelector('img');
   imageElement.src = game.imageUrl || 'https://via.placeholder.com/40x40?text=No+Image';
   imageElement.alt = game.name;
+  
+  // Handle image loading errors
+  imageElement.onerror = function() {
+    this.src = 'https://via.placeholder.com/40x40?text=No+Image';
+  };
   
   // Set game details
   row.querySelector('.game-name').textContent = game.name;
@@ -296,8 +301,17 @@ function checkDuplicates(newGames) {
 
 // Add bulk games to database
 function addBulkGames() {
+  // Debug: Kiểm tra kết nối database trước
+  console.log("Kiểm tra kết nối Firebase trước khi thêm game:", db);
+  if (!db) {
+    showStatusMessage("Không thể kết nối đến cơ sở dữ liệu!", 'error');
+    return;
+  }
+
   const games = parseBulkGamesInput();
-  if (games.length === 0) return;
+  if (games.length === 0) {
+    return;
+  }
   
   let gamesToAdd = games;
   
@@ -314,30 +328,59 @@ function addBulkGames() {
   // Hiển thị thông báo đang xử lý
   showStatusMessage('Đang thêm game...', 'warning');
   
-  // Reference to games in database
-  const gamesRef = db.ref('games');
+  // Thêm game từng cái một và theo dõi tiến trình
+  let successCount = 0;
+  let errorCount = 0;
+  let totalGames = gamesToAdd.length;
   
-  // Add each game
-  const promises = gamesToAdd.map(game => {
+  gamesToAdd.forEach(game => {
     try {
-      const newGameRef = gamesRef.push();
-      return newGameRef.set(game);
+      // Tạo reference mới cho mỗi game
+      const newGameRef = db.ref('games').push();
+      
+      // Lưu game vào database
+      newGameRef.set(game)
+        .then(() => {
+          successCount++;
+          console.log(`Đã thêm game "${game.name}" thành công`);
+          
+          // Kiểm tra nếu đã xử lý tất cả game
+          if (successCount + errorCount === totalGames) {
+            onAddGamesComplete(successCount, errorCount);
+          }
+        })
+        .catch(error => {
+          errorCount++;
+          console.error(`Lỗi khi thêm game "${game.name}":`, error);
+          
+          // Kiểm tra nếu đã xử lý tất cả game
+          if (successCount + errorCount === totalGames) {
+            onAddGamesComplete(successCount, errorCount);
+          }
+        });
     } catch (error) {
-      console.error(`Error pushing game "${game.name}":`, error);
-      return Promise.reject(error);
+      errorCount++;
+      console.error(`Lỗi khi thêm game "${game.name}":`, error);
+      
+      // Kiểm tra nếu đã xử lý tất cả game
+      if (successCount + errorCount === totalGames) {
+        onAddGamesComplete(successCount, errorCount);
+      }
     }
   });
-  
-  // Wait for all additions to complete
-  Promise.all(promises)
-    .then(() => {
-      showStatusMessage(`Đã thêm ${gamesToAdd.length} game mới thành công`);
-      bulkGamesTextarea.value = ''; // Clear textarea
-    })
-    .catch(error => {
-      console.error('Error adding games:', error);
-      showStatusMessage(`Lỗi khi thêm game: ${error.message}`, 'error');
-    });
+}
+
+// Xử lý khi hoàn thành thêm game
+function onAddGamesComplete(successCount, errorCount) {
+  if (errorCount === 0) {
+    showStatusMessage(`Đã thêm ${successCount} game mới thành công`, 'success');
+    bulkGamesTextarea.value = ''; // Clear textarea
+  } else if (successCount === 0) {
+    showStatusMessage(`Không thể thêm game. Gặp ${errorCount} lỗi.`, 'error');
+  } else {
+    showStatusMessage(`Đã thêm ${successCount} game thành công và ${errorCount} lỗi`, 'warning');
+    bulkGamesTextarea.value = ''; // Clear textarea
+  }
 }
 
 // Delete a game
@@ -605,7 +648,15 @@ function fetchGames() {
   // Reference to games in database
   const gamesRef = db.ref('games');
   
+  // Thêm timeout để xử lý trường hợp không phản hồi
+  let fetchTimeout = setTimeout(() => {
+    showStatusMessage("Không thể tải dữ liệu game: Timeout. Vui lòng làm mới trang.", "error");
+  }, 15000);
+  
   gamesRef.on('value', (snapshot) => {
+    // Hủy timeout nếu nhận được phản hồi
+    clearTimeout(fetchTimeout);
+    
     allGames = {};
     genres.clear();
     
@@ -614,7 +665,7 @@ function fetchGames() {
       
       // Collect genres
       Object.values(allGames).forEach(game => {
-        if (game.genre) {
+        if (game && game.genre) {
           genres.add(game.genre);
         }
       });
@@ -624,33 +675,46 @@ function fetchGames() {
     populateGenreFilters();
     renderGamesTable();
   }, (error) => {
+    // Hủy timeout nếu có lỗi
+    clearTimeout(fetchTimeout);
+    
     console.error('Error fetching games:', error);
     showStatusMessage(`Lỗi khi tải dữ liệu: ${error.message}`, 'error');
   });
 }
 
-// Kiểm tra kết nối Firebase
-function checkFirebaseConnection() {
-  const connectedRef = db.ref('.info/connected');
-  connectedRef.on('value', (snap) => {
-    if (snap.val() === true) {
-      console.log('Đã kết nối với Firebase Database');
-    } else {
-      console.log('Đã ngắt kết nối với Firebase Database');
-      showStatusMessage('Mất kết nối với cơ sở dữ liệu! Vui lòng kiểm tra kết nối internet.', 'error');
-    }
-  });
+// Kiểm tra quyền truy cập database
+function checkDatabasePermissions() {
+  // Thử ghi giá trị test vào database
+  const testRef = db.ref('permissions_test');
+  
+  testRef.set({
+      timestamp: Date.now(),
+      message: "Testing write permissions"
+    })
+    .then(() => {
+      console.log("Đã xác minh quyền ghi vào database");
+      // Xóa dữ liệu test sau khi kiểm tra
+      testRef.remove();
+    })
+    .catch(error => {
+      console.error("Không có quyền ghi vào database:", error);
+      showStatusMessage("Không có quyền ghi vào cơ sở dữ liệu. Vui lòng kiểm tra Firebase Rules.", "error");
+    });
 }
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+  // Thêm debug thông tin về DOM elements
+  console.log("DOM elements:");
+  console.log("loginContainer:", loginContainer);
+  console.log("adminContent:", adminContent);
+  console.log("addBulkGamesBtn:", addBulkGamesBtn);
+  
   // Kiểm tra trạng thái đăng nhập
   checkLoginStatus();
   
-  // Kiểm tra kết nối Firebase
-  checkFirebaseConnection();
-  
-  // Add event listeners for login/logout
+  // Thêm event listeners for login/logout
   loginButton.addEventListener('click', handleLogin);
   logoutButton.addEventListener('click', handleLogout);
   
@@ -662,14 +726,50 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   
   // Add event listeners for admin functions
-  addBulkGamesBtn.addEventListener('click', addBulkGames);
+  addBulkGamesBtn.addEventListener('click', () => {
+    console.log("Thêm game button clicked");
+    addBulkGames();
+  });
+  
   applyPercentageDiscountBtn.addEventListener('click', applyPercentageDiscount);
   applyPriceRangeDiscountBtn.addEventListener('click', applyPriceRangeDiscount);
   removeDuplicatesBtn.addEventListener('click', removeDuplicates);
   resetDiscountsBtn.addEventListener('click', resetAllDiscounts);
   
-  // Fetch games chỉ khi đã đăng nhập
+  // Fetch games và kiểm tra quyền khi đã đăng nhập
   if (localStorage.getItem('adminLoggedIn') === 'true') {
+    // Kiểm tra quyền truy cập database
+    setTimeout(checkDatabasePermissions, 2000);
+    
+    // Tải danh sách game
     fetchGames();
   }
 });
+
+// Kiểm tra xem có đang chạy trên localhost không
+const isLocalhost = window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1' ||
+                     window.location.hostname.includes('192.168.');
+
+// Thêm debug chức năng nếu đang ở localhost
+if (isLocalhost) {
+  window.debugAddGame = function() {
+    const testGame = {
+      name: "Test Game " + Date.now(),
+      price: 100000,
+      genre: "Test",
+      imageUrl: "https://via.placeholder.com/300x200",
+      addedAt: Date.now()
+    };
+    
+    db.ref('games').push().set(testGame)
+      .then(() => {
+        console.log("Đã thêm game test thành công");
+        alert("Đã thêm game test thành công");
+      })
+      .catch(error => {
+        console.error("Lỗi khi thêm game test:", error);
+        alert("Lỗi khi thêm game test: " + error.message);
+      });
+  };
+}
