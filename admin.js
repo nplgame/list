@@ -1,3 +1,67 @@
+// Xác thực đăng nhập
+const loginContainer = document.getElementById('login-container');
+const adminContent = document.getElementById('admin-content');
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const loginButton = document.getElementById('login-button');
+const logoutButton = document.getElementById('logout-button');
+const loginErrorMessage = document.getElementById('login-error');
+
+// Thông tin đăng nhập
+const ADMIN_USERNAME = 'admin';
+const ADMIN_PASSWORD = 'adm123';
+
+// Kiểm tra trạng thái đăng nhập từ localStorage
+function checkLoginStatus() {
+  const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+  if (isLoggedIn) {
+    loginContainer.classList.add('hidden');
+    adminContent.classList.remove('hidden');
+  } else {
+    loginContainer.classList.remove('hidden');
+    adminContent.classList.add('hidden');
+  }
+}
+
+// Xử lý đăng nhập
+function handleLogin() {
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value.trim();
+  
+  if (!username || !password) {
+    showLoginError('Vui lòng nhập đầy đủ tài khoản và mật khẩu');
+    return;
+  }
+  
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    // Đăng nhập thành công
+    localStorage.setItem('adminLoggedIn', 'true');
+    loginContainer.classList.add('hidden');
+    adminContent.classList.remove('hidden');
+    loginErrorMessage.classList.add('hidden');
+    
+    // Làm mới dữ liệu
+    fetchGames();
+  } else {
+    showLoginError('Tài khoản hoặc mật khẩu không đúng');
+  }
+}
+
+// Hiển thị lỗi đăng nhập
+function showLoginError(message) {
+  loginErrorMessage.textContent = message;
+  loginErrorMessage.classList.remove('hidden');
+}
+
+// Xử lý đăng xuất
+function handleLogout() {
+  localStorage.removeItem('adminLoggedIn');
+  loginContainer.classList.remove('hidden');
+  adminContent.classList.add('hidden');
+  usernameInput.value = '';
+  passwordInput.value = '';
+}
+
 // References to HTML elements
 const bulkGamesTextarea = document.getElementById('bulk-games');
 const checkDuplicatesCheckbox = document.getElementById('check-duplicates');
@@ -18,7 +82,7 @@ const tableNoGamesMessage = document.getElementById('table-no-games');
 const statusMessage = document.getElementById('status-message');
 
 // Store all games
-let allGames = [];
+let allGames = {};
 let genres = new Set();
 
 // Format price to VND
@@ -100,12 +164,12 @@ function renderGameRow(gameId, game) {
 
 // Render all games in the table
 function renderGamesTable() {
-  // Clear previous content except loading indicator row
+  // Clear previous content 
   while (gamesTableBody.firstChild) {
     gamesTableBody.removeChild(gamesTableBody.firstChild);
   }
   
-  if (allGames.length === 0) {
+  if (Object.keys(allGames).length === 0) {
     // Show no games message
     const emptyRow = document.createElement('tr');
     emptyRow.innerHTML = `
@@ -186,7 +250,7 @@ function parseBulkGamesInput() {
   });
   
   if (errors.length > 0) {
-    showStatusMessage(`Có lỗi: ${errors[0]} và ${errors.length - 1} lỗi khác`, 'error');
+    showStatusMessage(`Có lỗi: ${errors[0]}${errors.length > 1 ? ` và ${errors.length - 1} lỗi khác` : ''}`, 'error');
     console.error('Parsing errors:', errors);
   }
   
@@ -247,13 +311,21 @@ function addBulkGames() {
     return;
   }
   
+  // Hiển thị thông báo đang xử lý
+  showStatusMessage('Đang thêm game...', 'warning');
+  
   // Reference to games in database
   const gamesRef = db.ref('games');
   
   // Add each game
   const promises = gamesToAdd.map(game => {
-    const newGameRef = gamesRef.push();
-    return newGameRef.set(game);
+    try {
+      const newGameRef = gamesRef.push();
+      return newGameRef.set(game);
+    } catch (error) {
+      console.error(`Error pushing game "${game.name}":`, error);
+      return Promise.reject(error);
+    }
   });
   
   // Wait for all additions to complete
@@ -538,7 +610,7 @@ function fetchGames() {
     genres.clear();
     
     if (snapshot.exists()) {
-      allGames = snapshot.val();
+      allGames = snapshot.val() || {};
       
       // Collect genres
       Object.values(allGames).forEach(game => {
@@ -557,15 +629,47 @@ function fetchGames() {
   });
 }
 
+// Kiểm tra kết nối Firebase
+function checkFirebaseConnection() {
+  const connectedRef = db.ref('.info/connected');
+  connectedRef.on('value', (snap) => {
+    if (snap.val() === true) {
+      console.log('Đã kết nối với Firebase Database');
+    } else {
+      console.log('Đã ngắt kết nối với Firebase Database');
+      showStatusMessage('Mất kết nối với cơ sở dữ liệu! Vui lòng kiểm tra kết nối internet.', 'error');
+    }
+  });
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-  // Fetch games when page loads
-  fetchGames();
+  // Kiểm tra trạng thái đăng nhập
+  checkLoginStatus();
   
-  // Add event listeners
+  // Kiểm tra kết nối Firebase
+  checkFirebaseConnection();
+  
+  // Add event listeners for login/logout
+  loginButton.addEventListener('click', handleLogin);
+  logoutButton.addEventListener('click', handleLogout);
+  
+  // Xử lý nhấn Enter trong form đăng nhập
+  passwordInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      handleLogin();
+    }
+  });
+  
+  // Add event listeners for admin functions
   addBulkGamesBtn.addEventListener('click', addBulkGames);
   applyPercentageDiscountBtn.addEventListener('click', applyPercentageDiscount);
   applyPriceRangeDiscountBtn.addEventListener('click', applyPriceRangeDiscount);
   removeDuplicatesBtn.addEventListener('click', removeDuplicates);
   resetDiscountsBtn.addEventListener('click', resetAllDiscounts);
+  
+  // Fetch games chỉ khi đã đăng nhập
+  if (localStorage.getItem('adminLoggedIn') === 'true') {
+    fetchGames();
+  }
 });
