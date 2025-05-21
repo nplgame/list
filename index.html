@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Store - Danh sách game</title>
+  
+  <!-- Tailwind CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <header class="bg-indigo-600 text-white shadow-lg">
+    <div class="container mx-auto py-4 px-6 flex justify-between items-center">
+      <h1 class="text-3xl font-bold">Game Store</h1>
+      <nav>
+        <a href="index.html" class="text-white font-medium mr-4">Trang chủ</a>
+        <a href="admin.html" class="bg-white text-indigo-600 py-2 px-4 rounded-lg font-medium transition-all hover:bg-indigo-100">Admin</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-6 py-8">
+    <!-- Bộ lọc -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+      <h2 class="text-xl font-bold mb-4">Bộ lọc</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Lọc theo thể loại -->
+        <div>
+          <label for="genre-filter" class="block text-sm font-medium text-gray-700 mb-2">Thể loại</label>
+          <select id="genre-filter" class="w-full border border-gray-300 rounded-lg p-2">
+            <option value="">Tất cả thể loại</option>
+            <!-- Các option sẽ được thêm bằng JavaScript -->
+          </select>
+        </div>
+        
+        <!-- Lọc theo khoảng giá -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Khoảng giá</label>
+          <div class="flex items-center space-x-2">
+            <input type="number" id="min-price" placeholder="Tối thiểu" class="w-full border border-gray-300 rounded-lg p-2">
+            <span>-</span>
+            <input type="number" id="max-price" placeholder="Tối đa" class="w-full border border-gray-300 rounded-lg p-2">
+          </div>
+        </div>
+        
+        <!-- Lọc theo giảm giá -->
+        <div>
+          <label for="discount-filter" class="block text-sm font-medium text-gray-700 mb-2">Giảm giá</label>
+          <select id="discount-filter" class="w-full border border-gray-300 rounded-lg p-2">
+            <option value="">Tất cả</option>
+            <option value="0">Không giảm giá</option>
+            <option value="10">Giảm 10% trở lên</option>
+            <option value="20">Giảm 20% trở lên</option>
+            <option value="30">Giảm 30% trở lên</option>
+            <option value="50">Giảm 50% trở lên</option>
+          </select>
+        </div>
+      </div>
+      
+      <button id="apply-filters" class="mt-4 bg-indigo-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+        Áp dụng
+      </button>
+      <button id="reset-filters" class="mt-4 ml-2 bg-gray-200 text-gray-800 py-2 px-6 rounded-lg font-medium hover:bg-gray-300 transition-colors">
+        Đặt lại
+      </button>
+    </div>
+    
+    <!-- Danh sách game -->
+    <div class="mb-4 flex justify-between items-center">
+      <h2 class="text-2xl font-bold">Danh sách game</h2>
+      <div class="text-gray-600"><span id="game-count">0</span> games</div>
+    </div>
+    
+    <div id="games-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <!-- Game cards will be added here by JavaScript -->
+      <!-- Loading indicator -->
+      <div id="loading" class="col-span-full flex justify-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+      </div>
+    </div>
+    
+    <!-- No results message -->
+    <div id="no-results" class="hidden text-center py-12 text-gray-500">
+      Không tìm thấy game nào phù hợp với bộ lọc của bạn.
+    </div>
+  </main>
+  
+  <footer class="bg-gray-800 text-white py-6">
+    <div class="container mx-auto px-6 text-center">
+      <p>Game Store &copy; 2025 - Website xây dựng với Firebase và GitHub Pages</p>
+    </div>
+  </footer>
+
+  <!-- Template cho game card -->
+  <template id="game-card-template">
+    <div class="game-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+      <div class="game-image-container h-48 overflow-hidden">
+        <img class="game-image w-full h-full object-cover transition-transform hover:scale-105" src="" alt="">
+      </div>
+      <div class="p-4">
+        <h3 class="game-name text-lg font-bold mb-2 text-gray-800"></h3>
+        <div class="flex justify-between items-center mb-2">
+          <span class="game-genre text-sm bg-indigo-100 text-indigo-800 py-1 px-2 rounded"></span>
+          <div class="flex flex-col items-end">
+            <span class="game-original-price text-sm text-gray-500 line-through hidden"></span>
+            <span class="game-price text-lg font-bold text-indigo-600"></span>
+          </div>
+        </div>
+        <div class="game-discount bg-red-100 text-red-800 text-sm py-1 px-2 rounded hidden">
+          Giảm <span class="discount-percent"></span>%
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Firebase Config -->
+  <script src="firebase-config.js"></script>
+  
+  <!-- Main JavaScript -->
+  <script src="script.js"></script>
+</body>
+</html>
