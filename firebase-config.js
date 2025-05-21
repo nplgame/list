@@ -1,13 +1,13 @@
 // Cấu hình Firebase
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCdaVwbjKTjAY8MKJeMtQJ7ckaUYd2bXpo",
-  authDomain: "listgame-fade8.firebaseapp.com",
-  databaseURL: "https://listgame-fade8-default-rtdb.asia-southeast1.firebasedatabase.app", // Đảm bảo đúng URL
-  projectId: "listgame-fade8",
-  storageBucket: "listgame-fade8.appspot.com",
-  messagingSenderId: "227142318470",
-  appId: "1:227142318470:web:f400f01d84b3d9ab395407",
-  measurementId: "G-3HR3WRVQPS"
+  apiKey: "AIzaSyAKYvfeUHqWi4j0fg5irw_a0D5tquYfSHI",
+  authDomain: "game-bcd42.firebaseapp.com",
+  projectId: "game-bcd42",
+  storageBucket: "game-bcd42.firebasestorage.app",
+  messagingSenderId: "621474051056",
+  appId: "1:621474051056:web:49cd8ef2c29725ee002335",
+  measurementId: "G-YK01ZB2GG9"
 };
 
 // Khởi tạo Firebase
