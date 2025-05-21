@@ -1,12 +1,13 @@
 // Thay thế các giá trị này với cấu hình Firebase của bạn từ console Firebase
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "SENDER_ID",
-  appId: "APP_ID"
+  apiKey: "AIzaSyCdaVwbjKTjAY8MKJeMtQJ7ckaUYd2bXpo",
+  authDomain: "listgame-fade8.firebaseapp.com",
+  projectId: "listgame-fade8",
+  storageBucket: "listgame-fade8.firebasestorage.app",
+  messagingSenderId: "227142318470",
+  appId: "1:227142318470:web:f400f01d84b3d9ab395407",
+  measurementId: "G-3HR3WRVQPS"
 };
 
 // Khởi tạo Firebase
