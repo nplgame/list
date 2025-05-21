@@ -29,6 +29,18 @@ function calculateDiscountPercentage(originalPrice, discountPrice) {
   return Math.round(((originalPrice - discountPrice) / originalPrice) * 100);
 }
 
+// Hiển thị thông báo lỗi
+function showError(message) {
+  const errorElement = document.createElement('div');
+  errorElement.className = 'bg-red-600 text-white px-6 py-4 rounded-lg shadow-lg fixed bottom-4 right-4';
+  errorElement.textContent = message;
+  document.body.appendChild(errorElement);
+  
+  setTimeout(() => {
+    errorElement.remove();
+  }, 5000);
+}
+
 // Render a single game card
 function renderGameCard(game) {
   const gameCard = gameCardTemplate.content.cloneNode(true);
@@ -37,6 +49,11 @@ function renderGameCard(game) {
   const imageElement = gameCard.querySelector('.game-image');
   imageElement.src = game.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image';
   imageElement.alt = game.name;
+  
+  // Xử lý lỗi ảnh
+  imageElement.onerror = function() {
+    this.src = 'https://via.placeholder.com/300x200?text=No+Image';
+  };
   
   // Set game details
   gameCard.querySelector('.game-name').textContent = game.name;
@@ -86,10 +103,16 @@ function renderGames(games) {
     noResultsElem.classList.add('hidden');
   }
   
+  // Sử dụng DocumentFragment để cải thiện hiệu suất
+  const fragment = document.createDocumentFragment();
+  
   // Render each game
   games.forEach(game => {
-    gamesContainer.appendChild(renderGameCard(game));
+    fragment.appendChild(renderGameCard(game));
   });
+  
+  // Thêm tất cả game cards vào container
+  gamesContainer.appendChild(fragment);
   
   // Hide loading indicator
   loadingElem.classList.add('hidden');
@@ -124,7 +147,7 @@ function applyFilters() {
     
     // Price filter - use discounted price if available
     const currentPrice = game.discountPrice || game.price;
-    const priceMatch = currentPrice >= minPrice && currentPrice <= maxPrice;
+    const priceMatch = currentPrice >= minPrice && (maxPrice === Infinity || currentPrice <= maxPrice);
     
     // Discount filter
     const discountPercentage = calculateDiscountPercentage(game.price, game.discountPrice);
@@ -159,17 +182,19 @@ function fetchGames() {
     genres.clear();
     
     if (snapshot.exists()) {
-      const gamesData = snapshot.val();
+      const gamesData = snapshot.val() || {};
       
       // Convert object to array and collect genres
       Object.keys(gamesData).forEach(key => {
         const game = gamesData[key];
-        game.id = key; // Add id field
-        allGames.push(game);
-        
-        // Add to genres set
-        if (game.genre) {
-          genres.add(game.genre);
+        if (game && typeof game === 'object') { // Kiểm tra dữ liệu hợp lệ
+          game.id = key; // Add id field
+          allGames.push(game);
+          
+          // Add to genres set
+          if (game.genre) {
+            genres.add(game.genre);
+          }
         }
       });
     }
@@ -183,15 +208,36 @@ function fetchGames() {
   }, (error) => {
     console.error('Error fetching games:', error);
     loadingElem.classList.add('hidden');
+    showError('Không thể tải dữ liệu game. Vui lòng làm mới trang và thử lại.');
   });
+}
+
+// Xử lý sự kiện Enter trong các ô input số
+function handleEnterKeyInFilters() {
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      applyFilters();
+    }
+  };
+  
+  minPriceFilter.addEventListener('keypress', handleKeyPress);
+  maxPriceFilter.addEventListener('keypress', handleKeyPress);
 }
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   // Fetch games when page loads
-  fetchGames();
+  try {
+    fetchGames();
+  } catch (error) {
+    console.error('Lỗi khởi tạo:', error);
+    showError('Không thể kết nối đến cơ sở dữ liệu. Vui lòng làm mới trang và thử lại.');
+  }
   
   // Add event listeners for filters
   applyFiltersBtn.addEventListener('click', applyFilters);
   resetFiltersBtn.addEventListener('click', resetFilters);
+  
+  // Xử lý sự kiện Enter trong các ô input
+  handleEnterKeyInFilters();
 });
