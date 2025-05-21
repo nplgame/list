@@ -26,7 +26,37 @@
     </div>
   </header>
 
-  <main class="container mx-auto px-6 py-8">
+  <!-- Login Form - Hiển thị mặc định -->
+  <div id="login-container" class="container mx-auto px-6 py-12">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md p-8">
+      <h2 class="text-2xl font-bold mb-6 text-center">Đăng Nhập Admin</h2>
+      
+      <div id="login-error" class="mb-4 text-red-600 text-center hidden"></div>
+      
+      <div class="mb-4">
+        <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Tài khoản</label>
+        <input type="text" id="username" class="w-full border border-gray-300 rounded-lg p-3" placeholder="Nhập tài khoản admin">
+      </div>
+      
+      <div class="mb-6">
+        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Mật khẩu</label>
+        <input type="password" id="password" class="w-full border border-gray-300 rounded-lg p-3" placeholder="Nhập mật khẩu">
+      </div>
+      
+      <button id="login-button" class="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+        Đăng Nhập
+      </button>
+    </div>
+  </div>
+
+  <main id="admin-content" class="container mx-auto px-6 py-8 hidden">
+    <div class="flex justify-between items-center mb-8">
+      <h2 class="text-2xl font-bold">Chào mừng, Admin!</h2>
+      <button id="logout-button" class="bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors">
+        Đăng xuất
+      </button>
+    </div>
+    
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- Thêm game hàng loạt -->
       <div class="bg-white rounded-xl shadow-md p-6">
