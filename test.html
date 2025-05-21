@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firebase Connection Test</title>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .success { color: green; }
+    .error { color: red; }
+    .warning { color: orange; }
+    
+    button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 10px 15px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 10px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    
+    .log-area {
+      border: 1px solid #ddd;
+      padding: 15px;
+      height: 300px;
+      overflow-y: auto;
+      margin-top: 20px;
+      background-color: #f9f9f9;
+    }
+    
+    input[type="text"] {
+      padding: 8px;
+      width: 50%;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Firebase Connection Test</h1>
+  
+  <div>
+    <h2>1. Kiểm tra kết nối Firebase</h2>
+    <button id="test-connection">Kiểm tra kết nối</button>
+    <div id="connection-status">Trạng thái kết nối: Chưa kiểm tra</div>
+  </div>
+  
+  <div>
+    <h2>2. Kiểm tra quyền đọc dữ liệu</h2>
+    <button id="test-read">Kiểm tra quyền đọc</button>
+    <div id="read-status">Trạng thái đọc: Chưa kiểm tra</div>
+  </div>
+  
+  <div>
+    <h2>3. Kiểm tra quyền ghi dữ liệu</h2>
+    <input type="text" id="test-data" value="Test data">
+    <button id="test-write">Kiểm tra quyền ghi</button>
+    <div id="write-status">Trạng thái ghi: Chưa kiểm tra</div>
+  </div>
+
+  <div>
+    <h2>4. Thêm game test</h2>
+    <button id="add-test-game">Thêm game test</button>
+    <div id="add-game-status">Trạng thái: Chưa thêm</div>
+  </div>
+  
+  <div class="log-area" id="log-area">
+    <div>Log hoạt động sẽ hiển thị ở đây...</div>
+  </div>
+  
+  <script>
+    // Cấu hình Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCdaVwbjKTjAY8MKJeMtQJ7ckaUYd2bXpo",
+      authDomain: "listgame-fade8.firebaseapp.com",
+      databaseURL: "https://listgame-fade8-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "listgame-fade8",
+      storageBucket: "listgame-fade8.appspot.com",
+      messagingSenderId: "227142318470",
+      appId: "1:227142318470:web:f400f01d84b3d9ab395407",
+      measurementId: "G-3HR3WRVQPS"
+    };
+    
+    // Khởi tạo Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    
+    // DOM elements
+    const testConnectionBtn = document.getElementById('test-connection');
+    const connectionStatus = document.getElementById('connection-status');
+    const testReadBtn = document.getElementById('test-read');
+    const readStatus = document.getElementById('read-status');
+    const testWriteBtn = document.getElementById('test-write');
+    const writeStatus = document.getElementById('write-status');
+    const testData = document.getElementById('test-data');
+    const addTestGameBtn = document.getElementById('add-test-game');
+    const addGameStatus = document.getElementById('add-game-status');
+    const logArea = document.getElementById('log-area');
+    
+    // Log function
+    function logMessage(message, type = 'info') {
+      const logEntry = document.createElement('div');
+      logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      
+      if (type === 'success') {
+        logEntry.className = 'success';
+      } else if (type === 'error') {
+        logEntry.className = 'error';
+      } else if (type === 'warning') {
+        logEntry.className = 'warning';
+      }
+      
+      logArea.appendChild(logEntry);
+      logArea.scrollTop = logArea.scrollHeight;
+    }
+    
+    // Test connection
+    testConnectionBtn.addEventListener('click', () => {
+      connectionStatus.textContent = 'Trạng thái kết nối: Đang kiểm tra...';
+      logMessage('Kiểm tra kết nối Firebase...');
+      
+      const connectedRef = firebase.database().ref('.info/connected');
+      connectedRef.on('value', (snap) => {
+        if (snap.val() === true) {
+          connectionStatus.textContent = 'Trạng thái kết nối: Đã kết nối';
+          connectionStatus.className = 'success';
+          logMessage('Kết nối Firebase thành công!', 'success');
+        } else {
+          connectionStatus.textContent = 'Trạng thái kết nối: Mất kết nối';
+          connectionStatus.className = 'error';
+          logMessage('Mất kết nối Firebase!', 'error');
+        }
+      });
+    });
+    
+    // Test read permissions
+    testReadBtn.addEventListener('click', () => {
+      readStatus.textContent = 'Trạng thái đọc: Đang kiểm tra...';
+      logMessage('Kiểm tra quyền đọc dữ liệu...');
+      
+      db.ref('games').once('value')
+        .then((snapshot) => {
+          readStatus.textContent = 'Trạng thái đọc: Thành công';
+          readStatus.className = 'success';
+          logMessage(`Đọc dữ liệu thành công! Nhận được ${snapshot.exists() ? Object.keys(snapshot.val() || {}).length : 0} game.`, 'success');
+        })
+        .catch((error) => {
+          readStatus.textContent = `Trạng thái đọc: Lỗi - ${error.message}`;
+          readStatus.className = 'error';
+          logMessage(`Lỗi khi đọc dữ liệu: ${error.message}`, 'error');
+        });
+    });
+    
+    // Test write permissions
+    testWriteBtn.addEventListener('click', () => {
+      const data = testData.value;
+      writeStatus.textContent = 'Trạng thái ghi: Đang kiểm tra...';
+      logMessage(`Kiểm tra quyền ghi dữ liệu với nội dung: "${data}"`);
+      
+      db.ref('test_write').set({
+        timestamp: Date.now(),
+        data: data,
+        test_id: Math.random().toString(36).substring(2, 15)
+      })
+      .then(() => {
+        writeStatus.textContent = 'Trạng thái ghi: Thành công';
+        writeStatus.className = 'success';
+        logMessage('Ghi dữ liệu thành công!', 'success');
+        
+        // Xóa dữ liệu test sau 5 giây
+        setTimeout(() => {
+          db.ref('test_write').remove()
+            .then(() => logMessage('Đã xóa dữ liệu test.'));
+        }, 5000);
+      })
+      .catch((error) => {
+        writeStatus.textContent = `Trạng thái ghi: Lỗi - ${error.message}`;
+        writeStatus.className = 'error';
+        logMessage(`Lỗi khi ghi dữ liệu: ${error.message}`, 'error');
+      });
+    });
+    
+    // Add test game
+    addTestGameBtn.addEventListener('click', () => {
+      addGameStatus.textContent = 'Trạng thái: Đang thêm...';
+      
+      const testGame = {
+        name: "Test Game " + new Date().toLocaleString(),
+        price: 150000,
+        genre: "Test",
+        imageUrl: "https://via.placeholder.com/300x200",
+        addedAt: Date.now()
+      };
+      
+      logMessage(`Thêm game test: "${testGame.name}"`);
+      
+      db.ref('games').push().set(testGame)
+        .then(() => {
+          addGameStatus.textContent = 'Trạng thái: Thêm thành công';
+          addGameStatus.className = 'success';
+          logMessage('Đã thêm game test thành công!', 'success');
+        })
+        .catch((error) => {
+          addGameStatus.textContent = `Trạng thái: Lỗi - ${error.message}`;
+          addGameStatus.className = 'error';
+          logMessage(`Lỗi khi thêm game test: ${error.message}`, 'error');
+        });
+    });
+    
+    // Kiểm tra trạng thái kết nối ban đầu
+    logMessage('Trang kiểm tra Firebase đã được tải.');
+    testConnectionBtn.click();
+  </script>
+</body>
+</html>
