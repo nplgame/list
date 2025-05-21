@@ -10,11 +10,11 @@ function checkFirebaseConnection() {
     console.warn("Database chưa được khởi tạo. Đang thử khởi tạo lại...");
     
     try {
-      // Cấu hình Firebase trực tiếp
+      // Cấu hình Firebase trực tiếp với URL chính xác
       const fallbackConfig = {
         apiKey: "AIzaSyCdaVwbjKTjAY8MKJeMtQJ7ckaUYd2bXpo",
         authDomain: "listgame-fade8.firebaseapp.com",
-        databaseURL: "https://listgame-fade8-default-rtdb.firebasedatabase.app",
+        databaseURL: "https://listgame-fade8-default-rtdb.firebaseio.com", // URL chính xác
         projectId: "listgame-fade8",
         storageBucket: "listgame-fade8.appspot.com",
         messagingSenderId: "227142318470",
