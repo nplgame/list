@@ -1,46 +1,37 @@
-// Thay thế các giá trị này với cấu hình Firebase của bạn từ console Firebase
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Cấu hình Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyCdaVwbjKTjAY8MKJeMtQJ7ckaUYd2bXpo",
   authDomain: "listgame-fade8.firebaseapp.com",
+  databaseURL: "https://listgame-fade8-default-rtdb.asia-southeast1.firebasedatabase.app", // Đảm bảo đúng URL
   projectId: "listgame-fade8",
-  storageBucket: "listgame-fade8.firebasestorage.app",
+  storageBucket: "listgame-fade8.appspot.com",
   messagingSenderId: "227142318470",
   appId: "1:227142318470:web:f400f01d84b3d9ab395407",
-  measurementId: "G-3HR3WRVQPS",
-  databaseURL: "https://listgame-fade8-default-rtdb.asia-southeast1.firebasedatabase.app/" // Thêm databaseURL
+  measurementId: "G-3HR3WRVQPS"
 };
 
-// Khởi tạo Firebase với xử lý lỗi
+// Khởi tạo Firebase
+let db;
 try {
-  firebase.initializeApp(firebaseConfig);
-  console.log("Firebase đã được khởi tạo thành công");
-} catch (error) {
-  console.error("Lỗi khi khởi tạo Firebase:", error);
-  
-  // Hiển thị thông báo lỗi nếu cần
-  if (typeof showStatusMessage === 'function') {
-    showStatusMessage("Không thể kết nối đến cơ sở dữ liệu. Vui lòng làm mới trang và thử lại.", "error");
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
   } else {
-    // Nếu chưa có hàm showStatusMessage, tạo alert
-    setTimeout(() => {
-      alert("Không thể kết nối đến cơ sở dữ liệu. Vui lòng làm mới trang và thử lại.");
-    }, 1000);
+    firebase.app(); // Sử dụng app đã được khởi tạo nếu có
   }
-}
-
-// Tham chiếu tới Realtime Database
-const db = firebase.database();
-
-// Kiểm tra quyền truy cập
-db.ref('.info/connected').once('value')
-  .then(() => {
-    console.log("Kết nối Firebase Database thành công");
-  })
-  .catch(error => {
-    console.error("Lỗi khi kết nối Firebase Database:", error);
-    
-    if (typeof showStatusMessage === 'function') {
-      showStatusMessage("Không có quyền truy cập cơ sở dữ liệu. Vui lòng kiểm tra cấu hình Firebase Rules.", "error");
+  
+  db = firebase.database();
+  console.log("Kết nối Firebase thành công");
+  
+  // Kiểm tra kết nối
+  const connectedRef = firebase.database().ref(".info/connected");
+  connectedRef.on("value", (snap) => {
+    if (snap.val() === true) {
+      console.log("Đã kết nối đến Firebase Realtime Database");
+    } else {
+      console.log("Đã mất kết nối đến Firebase Realtime Database");
     }
   });
+} catch (error) {
+  console.error("Lỗi khi khởi tạo Firebase:", error);
+  alert("Không thể kết nối đến hệ thống. Vui lòng tải lại trang và thử lại.");
+}
